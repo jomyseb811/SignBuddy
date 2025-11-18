@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,9 +7,11 @@ import {
   StyleSheet,
   StatusBar,
   SafeAreaView,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { chapterProgressService } from '@/services/chapterProgress';
 
 interface Chapter {
   id: number;
@@ -18,43 +20,110 @@ interface Chapter {
 }
 
 // Reusable Circle Component
-const ChapterCircle = ({ chapter, onPress }: { chapter: Chapter; onPress: () => void }) => (
-  <View style={styles.circleContainer}>
-    <TouchableOpacity
-      style={[
-        styles.chapterCircle,
-        chapter.locked && styles.chapterCircleLocked
-      ]}
-      onPress={onPress}
-      disabled={chapter.locked}
-    >
-      {chapter.locked && (
-        <Ionicons name="lock-closed" size={32} color="#666" />
+const ChapterCircle = ({ chapter, onPress }: { chapter: Chapter; onPress: () => void }) => {
+  const isCompleted = chapterProgressService.getCompletedChapters().includes(chapter.id);
+  
+  return (
+    <View style={styles.circleContainer}>
+      <TouchableOpacity
+        style={[
+          styles.chapterCircle,
+          chapter.locked && styles.chapterCircleLocked,
+          isCompleted && styles.chapterCircleCompleted
+        ]}
+        onPress={onPress}
+        disabled={chapter.locked}
+      >
+        {chapter.locked ? (
+          <Ionicons name="lock-closed" size={32} color="#666" />
+        ) : isCompleted ? (
+          <Ionicons name="checkmark" size={40} color="#fff" />
+        ) : (
+          <View style={styles.chapterIcon} />
+        )}
+      </TouchableOpacity>
+      <Text style={styles.chapterTitle}>{chapter.title}</Text>
+      {isCompleted && (
+        <View style={styles.completedBadge}>
+          <Text style={styles.completedBadgeText}>✓</Text>
+        </View>
       )}
-    </TouchableOpacity>
-    <Text style={styles.chapterTitle}>{chapter.title}</Text>
-  </View>
-);
+    </View>
+  );
+};
 
 export default function SignBuddyApp() {
   const [activeTab, setActiveTab] = useState<'home' | 'practice' | 'dictionary' | 'profile'>('home');
+  const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [tapCount, setTapCount] = useState(0);
   
-  const chapters: Chapter[] = [
-    { id: 1, title: 'Greetings', locked: false },
-    { id: 2, title: 'Family', locked: true },
-    { id: 3, title: 'Numbers', locked: true },
-    { id: 4, title: 'Colors', locked: true },
-    { id: 5, title: 'Food', locked: true },
-    { id: 6, title: 'Animals', locked: true },
-    { id: 7, title: 'Weather', locked: true },
-  ];
+  // Initialize chapters and set up listener for progress updates
+  useEffect(() => {
+    const updateChapters = () => {
+      const updatedChapters: Chapter[] = [
+        { id: 1, title: 'Greetings', locked: !chapterProgressService.isChapterUnlocked(1) },
+        { id: 2, title: 'Family', locked: !chapterProgressService.isChapterUnlocked(2) },
+        { id: 3, title: 'Numbers', locked: !chapterProgressService.isChapterUnlocked(3) },
+        { id: 4, title: 'Colors', locked: !chapterProgressService.isChapterUnlocked(4) },
+        { id: 5, title: 'Food', locked: !chapterProgressService.isChapterUnlocked(5) },
+        { id: 6, title: 'Animals', locked: !chapterProgressService.isChapterUnlocked(6) },
+        { id: 7, title: 'Weather', locked: !chapterProgressService.isChapterUnlocked(7) },
+      ];
+      setChapters(updatedChapters);
+    };
+    
+    // Initial update
+    updateChapters();
+    
+    // Subscribe to progress updates
+    const unsubscribe = chapterProgressService.subscribe(updateChapters);
+    
+    // Cleanup subscription
+    return () => unsubscribe();
+  }, []);
 
   const handleChapterPress = (chapterId: number) => {
-    if (!chapters.find(ch => ch.id === chapterId)?.locked) {
+    if (chapterProgressService.isChapterUnlocked(chapterId)) {
       router.push({
-     pathname:`/learn/[chapterId]`,
-      params: { chapterId: chapterId.toString() }
-      });               
+        pathname: `/learn/[chapterId]`,
+        params: { chapterId: chapterId.toString() }
+      });
+    }
+  };
+
+  // Hidden test function - tap the title 5 times to access
+  const handleTitleTap = () => {
+    const newTapCount = tapCount + 1;
+    setTapCount(newTapCount);
+    
+    if (newTapCount === 5) {
+      Alert.alert(
+        'Developer Options',
+        'What would you like to do?',
+        [
+          {
+            text: 'Reset Progress',
+            onPress: () => {
+              chapterProgressService.resetProgress();
+              setTapCount(0);
+              Alert.alert('Success', 'Progress has been reset');
+            }
+          },
+          {
+            text: 'Unlock All Chapters',
+            onPress: () => {
+              chapterProgressService.completeChaptersUpTo(7);
+              setTapCount(0);
+              Alert.alert('Success', 'All chapters unlocked');
+            }
+          },
+          {
+            text: 'Cancel',
+            onPress: () => setTapCount(0),
+            style: 'cancel'
+          }
+        ]
+      );
     }
   };
 
@@ -62,9 +131,8 @@ export default function SignBuddyApp() {
     [1],           
     [2, 3], 
     [4],      
-    [5,6],
+    [5, 6],
     [7],
-  
   ];
 
   return (
@@ -73,7 +141,7 @@ export default function SignBuddyApp() {
       
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>SignBuddy</Text>
+        <Text style={styles.title} onPress={handleTitleTap}>SignBuddy</Text>
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
             <Text style={styles.statEmoji}>🔥</Text>
@@ -258,12 +326,39 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   chapterCircleLocked: {
-    opacity: 0.6,
+    backgroundColor: '#9CA3AF',
+    borderColor: '#6B7280',
+  },
+  chapterCircleCompleted: {
+    backgroundColor: '#10B981',
+    borderColor: '#047857',
+  },
+  chapterIcon: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   chapterTitle: {
     marginTop: 8,
     fontSize: 16,
     fontWeight: '600',
     color: '#1F2937',
+  },
+  completedBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: '#10B981',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  completedBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
 });

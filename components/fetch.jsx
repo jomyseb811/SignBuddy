@@ -1,17 +1,20 @@
-import { StyleSheet, Text, View } from 'react-native'
-import React from 'react'
+// import { StyleSheet, Text, View } from 'react-native'
+// import React, { useEffect } from 'react'
 
-const fetch = () => {
-     const [data,setData] = useState([])
-      const response = axios.get('https://www.spreadthesign.com/api/')
-    setData(response.data)
-  return (
-    <View>
-      <Text>fetch</Text>
-    </View>
-  )
-}
+// const Fetch = () => {
+//      const [data,setData] = useState([])
+//      useEffect(() => {
 
-export default fetch
+//        const response = axios.get('https://api.cloudinary.com/v1_1/drjwcgiyc/resources/search')
+//      setData(response.data)
+//      },[])
+//   return (
+//     <View>
+//       {/* <Text>fetch</Text> */}
+//     </View>
+//   )
+// }
 
-const styles = StyleSheet.create({})
+// export default Fetch
+
+// const styles = StyleSheet.create({})

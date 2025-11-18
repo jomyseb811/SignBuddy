@@ -1,50 +1,71 @@
-# Welcome to your Expo app 👋
+# SignBuddy Frontend
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+This is the frontend for the SignBuddy sign language learning application.
 
-## Get started
+## Features Implemented
 
-1. Install dependencies
+1. **Chapter-based Learning System**
+   - Arc-style chapter selection interface
+   - Progressive unlocking of chapters (complete one to unlock the next)
+   - Visual indicators for locked, unlocked, and completed chapters
 
-   ```bash
-   npm install
-   ```
+2. **Cloudinary Integration**
+   - Fetch sign language assets from Cloudinary folders
+   - Display assets in a grid layout for each chapter
+   - Environment variable configuration for API keys
 
-2. Start the app
+3. **Progress Tracking**
+   - In-memory progress tracking service
+   - Chapter completion status with visual indicators
+   - Automatic unlocking of subsequent chapters
 
-   ```bash
-   npx expo start
-   ```
+## File Structure
 
-In the output, you'll find options to open the app in a
+```
+app/
+  (tabs)/           # Main tab navigation
+    index.tsx       # Home screen with chapter selection
+    practice.tsx    # Practice screen
+    dictionary.tsx  # Dictionary screen
+    profile.tsx     # User profile screen
+  learn/            # Chapter learning screens
+    [chapterId].tsx # Dynamic route for individual chapters
+  _layout.tsx       # Root layout configuration
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+services/
+  cloudinary.jsx        # Cloudinary API integration
+  chapterProgress.ts    # Chapter progress tracking
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+constants/
+  icons.ts              # Icon imports
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## How to Use
 
-## Learn more
+1. **Chapter Selection**
+   - Tap on unlocked chapters (blue circles) to access lessons
+   - Locked chapters (gray circles with lock icon) are unlocked after completing the previous chapter
+   - Completed chapters show a green checkmark
 
-To learn more about developing your project with Expo, look at the following resources:
+2. **Learning Chapters**
+   - Each chapter displays sign language assets from Cloudinary
+   - Complete chapters by tapping the "Complete Chapter" button
+   - Completing a chapter unlocks the next one
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+3. **Testing Cloudinary Connection**
+   - Use the "Cloudinary Connection Test" button on the Practice tab to verify the integration
 
-## Join the community
+## Environment Variables
 
-Join our community of developers creating universal apps.
+The application uses the following environment variables:
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- `EXPO_PUBLIC_CLOUD_NAME` - Cloudinary cloud name
+- `EXPO_PUBLIC_API_KEY` - Cloudinary API key
+- `EXPO_PUBLIC_API_SECRET` - Cloudinary API secret
+
+## Dependencies
+
+- React Native
+- Expo
+- Cloudinary
+- Axios
