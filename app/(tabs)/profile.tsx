@@ -10,8 +10,10 @@ import {
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const streakDays = [true, true, false, false, false, false, false];
 
   return (
@@ -121,7 +123,8 @@ export default function ProfileScreen() {
         </View>
 
         {/* Logout Button */}
-        <TouchableOpacity style={styles.logoutButton}>
+        <TouchableOpacity style={styles.logoutButton}
+          onPress={() => router.push('/login')}>
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
 
