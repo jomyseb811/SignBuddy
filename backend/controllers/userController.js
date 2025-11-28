@@ -1,0 +1,208 @@
+const User = require('../models/User');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+
+// Register a new user
+const registerUser = async (req, res) => {
+  try {
+    const { username, email, password } = req.body;
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+    if (existingUser) {
+      return res.status(400).json({ message: 'User already exists with this email or username' });
+    }
+
+    // Hash password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // Create new user
+    const user = new User({
+      username,
+      email,
+      password: hashedPassword
+    });
+
+    const savedUser = await user.save();
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: savedUser._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.status(201).json({
+      message: 'User registered successfully',
+      token,
+      user: {
+        id: savedUser._id,
+        username: savedUser.username,
+        email: savedUser.email
+      }
+    });
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({ message: 'Error registering user' });
+  }
+};
+
+// Login user
+const loginUser = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Find user by email
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    // Check password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      message: 'Login successful',
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email
+      }
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Error logging in' });
+  }
+};
+
+// Get user profile
+const getUserProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json(user);
+  } catch (error) {
+    console.error('Get profile error:', error);
+    res.status(500).json({ message: 'Error fetching user profile' });
+  }
+};
+
+// Update user profile
+const updateUserProfile = async (req, res) => {
+  try {
+    const { username, email } = req.body;
+    const userId = req.user.userId;
+
+    // Check if user exists
+    const existingUser = await User.findById(userId);
+    if (!existingUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check if email or username is already taken by another user
+    if (email && email !== existingUser.email) {
+      const emailExists = await User.findOne({ email, _id: { $ne: userId } });
+      if (emailExists) {
+        return res.status(400).json({ message: 'Email is already taken' });
+      }
+    }
+
+    if (username && username !== existingUser.username) {
+      const usernameExists = await User.findOne({ username, _id: { $ne: userId } });
+      if (usernameExists) {
+        return res.status(400).json({ message: 'Username is already taken' });
+      }
+    }
+
+    // Update user
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { username, email },
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    res.json({
+      message: 'Profile updated successfully',
+      user: updatedUser
+    });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({ message: 'Error updating profile' });
+  }
+};
+
+// Change user password
+const changeUserPassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user.userId;
+
+    // Find user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check current password
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isPasswordValid) {
+      return res.status(400).json({ message: 'Current password is incorrect' });
+    }
+
+    // Hash new password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    // Update password
+    await User.findByIdAndUpdate(userId, { password: hashedPassword });
+
+    res.json({ message: 'Password changed successfully' });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({ message: 'Error changing password' });
+  }
+};
+
+// Delete user account
+const deleteUserAccount = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    // Find user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Delete user
+    await User.findByIdAndDelete(userId);
+
+    res.json({ message: 'Account deleted successfully' });
+  } catch (error) {
+    console.error('Delete account error:', error);
+    res.status(500).json({ message: 'Error deleting account' });
+  }
+};
+
+module.exports = {
+  registerUser,
+  loginUser,
+  getUserProfile,
+  updateUserProfile,
+  changeUserPassword,
+  deleteUserAccount
+};
