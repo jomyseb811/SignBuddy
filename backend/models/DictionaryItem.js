@@ -18,6 +18,17 @@ const dictionaryItemSchema = new mongoose.Schema({
   cloudinaryUrl: {
     type: String
   },
+  // Add status field for approval workflow
+  status: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'pending'
+  },
+  // Reference to the user who uploaded the sign
+  uploadedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
   createdAt: {
     type: Date,
     default: Date.now

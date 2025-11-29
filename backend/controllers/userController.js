@@ -17,11 +17,12 @@ const registerUser = async (req, res) => {
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // Create new user
+    // Create new user with default role
     const user = new User({
       username,
       email,
-      password: hashedPassword
+      password: hashedPassword,
+      role: 'user' // Default role
     });
 
     const savedUser = await user.save();
@@ -39,7 +40,8 @@ const registerUser = async (req, res) => {
       user: {
         id: savedUser._id,
         username: savedUser.username,
-        email: savedUser.email
+        email: savedUser.email,
+        role: savedUser.role // Include role in response
       }
     });
   } catch (error) {
@@ -57,6 +59,11 @@ const loginUser = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    // Check if user is deactivated
+    if (!user.isActive) {
+      return res.status(400).json({ message: 'Account has been deactivated' });
     }
 
     // Check password
@@ -78,7 +85,8 @@ const loginUser = async (req, res) => {
       user: {
         id: user._id,
         username: user.username,
-        email: user.email
+        email: user.email,
+        role: user.role // Include role in response
       }
     });
   } catch (error) {
@@ -198,11 +206,91 @@ const deleteUserAccount = async (req, res) => {
   }
 };
 
+// Admin: Get all users
+const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find().select('-password').sort({ createdAt: -1 });
+    res.json(users);
+  } catch (error) {
+    console.error('Get all users error:', error);
+    res.status(500).json({ message: 'Error fetching users' });
+  }
+};
+
+// Admin: Update user role
+const updateUserRole = async (req, res) => {
+  try {
+    const { userId, role } = req.body;
+
+    // Validate role
+    const validRoles = ['user', 'verified_user', 'super_user', 'admin'];
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({ message: 'Invalid role' });
+    }
+
+    // Prevent removing admin role from self
+    if (userId === req.user.userId && role !== 'admin') {
+      return res.status(400).json({ message: 'Cannot remove admin role from yourself' });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { role },
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({
+      message: 'User role updated successfully',
+      user: updatedUser
+    });
+  } catch (error) {
+    console.error('Update user role error:', error);
+    res.status(500).json({ message: 'Error updating user role' });
+  }
+};
+
+// Admin: Deactivate user
+const deactivateUser = async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    // Prevent deactivating self
+    if (userId === req.user.userId) {
+      return res.status(400).json({ message: 'Cannot deactivate yourself' });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { isActive: false },
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({
+      message: 'User deactivated successfully',
+      user: updatedUser
+    });
+  } catch (error) {
+    console.error('Deactivate user error:', error);
+    res.status(500).json({ message: 'Error deactivating user' });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
   getUserProfile,
   updateUserProfile,
   changeUserPassword,
-  deleteUserAccount
+  deleteUserAccount,
+  getAllUsers,
+  updateUserRole,
+  deactivateUser
 };

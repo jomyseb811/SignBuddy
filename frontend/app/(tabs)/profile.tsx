@@ -1,22 +1,20 @@
-import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  StatusBar,
-  SafeAreaView,
-  ScrollView,
-  Image,
-  Alert,
-  Modal,
-  TextInput,
-} from 'react-native';
+import auth, { getStoredUser } from '@/services/auth';
+import { chapterProgressService } from '@/services/chapterProgress';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import auth from '@/services/auth';
-import { getStoredUser } from '@/services/auth';
-import { chapterProgressService } from '@/services/chapterProgress';
+import React, { useEffect, useState } from 'react';
+import {
+  Alert,
+  Modal,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
 
 export default function ProfileScreen() {
   const router = useRouter();

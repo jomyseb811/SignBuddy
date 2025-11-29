@@ -17,6 +17,17 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  // Add role field with default value
+  role: {
+    type: String,
+    enum: ['user', 'verified_user', 'super_user', 'admin'],
+    default: 'user'
+  },
+  // Add isActive field for user deactivation
+  isActive: {
+    type: Boolean,
+    default: true
+  },
   progress: {
     type: Map,
     of: {

@@ -1,17 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-  StatusBar,
-  SafeAreaView,
-  Alert,
-} from 'react-native';
+import { chapterProgressService } from '@/services/chapterProgress';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { chapterProgressService } from '@/services/chapterProgress';
+import React, { useEffect, useState } from 'react';
+import {
+  Alert,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 interface Chapter {
   id: number;

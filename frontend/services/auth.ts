@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
-const API_URL = `${process.env.API_URL || 'http://192.168.1.11:3000/api'}/users`;
+const API_URL = 'http://192.168.1.3:3000/api/users';
 
 interface RegisterData {
   username: string;
@@ -14,14 +14,17 @@ interface LoginData {
   password: string;
 }
 
+interface UserData {
+  id: string;
+  username: string;
+  email: string;
+  role: string;
+}
+
 interface AuthResponse {
   message: string;
   token: string;
-  user: {
-    id: string;
-    username: string;
-    email: string;
-  };
+  user: UserData;
 }
 
 // Register a new user
@@ -29,7 +32,7 @@ export const register = async (data: RegisterData): Promise<AuthResponse> => {
   try {
     const response = await axios.post(`${API_URL}/register`, data);
     
-    // Store token in AsyncStorage
+    // Store token and user data in AsyncStorage
     if (response.data.token) {
       await AsyncStorage.setItem('token', response.data.token);
       await AsyncStorage.setItem('user', JSON.stringify(response.data.user));
@@ -49,7 +52,7 @@ export const login = async (data: LoginData): Promise<AuthResponse> => {
   try {
     const response = await axios.post(`${API_URL}/login`, data);
     
-    // Store token in AsyncStorage
+    // Store token and user data in AsyncStorage
     if (response.data.token) {
       await AsyncStorage.setItem('token', response.data.token);
       await AsyncStorage.setItem('user', JSON.stringify(response.data.user));
@@ -88,8 +91,72 @@ export const getUserProfile = async () => {
   }
 };
 
+// Logout user
+export const logout = async () => {
+  try {
+    await AsyncStorage.removeItem('token');
+    await AsyncStorage.removeItem('user');
+  } catch (error) {
+    console.error('Logout error:', error);
+  }
+};
+
+// Check if user is authenticated
+export const isAuthenticated = async (): Promise<boolean> => {
+  try {
+    const token = await AsyncStorage.getItem('token');
+    return !!token;
+  } catch (error) {
+    return false;
+  }
+};
+
+// Check if user is admin
+export const isAdmin = async (): Promise<boolean> => {
+  try {
+    const userStr = await AsyncStorage.getItem('user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      return user.role === 'admin';
+    }
+    return false;
+  } catch (error) {
+    return false;
+  }
+};
+
+// Get stored token
+export const getToken = async (): Promise<string | null> => {
+  try {
+    return await AsyncStorage.getItem('token');
+  } catch (error) {
+    return null;
+  }
+};
+
+// Get stored user
+export const getStoredUser = async () => {
+  try {
+    const userStr = await AsyncStorage.getItem('user');
+    return userStr ? JSON.parse(userStr) : null;
+  } catch (error) {
+    return null;
+  }
+};
+
+// Add missing functions for profile management
+interface UpdateProfileData {
+  username: string;
+  email: string;
+}
+
+interface ChangePasswordData {
+  currentPassword: string;
+  newPassword: string;
+}
+
 // Update user profile
-export const updateProfile = async (data: { username: string; email: string }) => {
+export const updateProfile = async (data: UpdateProfileData) => {
   try {
     const token = await AsyncStorage.getItem('token');
     
@@ -117,8 +184,8 @@ export const updateProfile = async (data: { username: string; email: string }) =
   }
 };
 
-// Change password
-export const changePassword = async (data: { currentPassword: string; newPassword: string }) => {
+// Change user password
+export const changePassword = async (data: ChangePasswordData) => {
   try {
     const token = await AsyncStorage.getItem('token');
     
@@ -141,7 +208,7 @@ export const changePassword = async (data: { currentPassword: string; newPasswor
   }
 };
 
-// Delete account
+// Delete user account
 export const deleteAccount = async () => {
   try {
     const token = await AsyncStorage.getItem('token');
@@ -169,54 +236,17 @@ export const deleteAccount = async () => {
   }
 };
 
-// Logout user
-export const logout = async () => {
-  try {
-    await AsyncStorage.removeItem('token');
-    await AsyncStorage.removeItem('user');
-  } catch (error) {
-    console.error('Logout error:', error);
-  }
-};
-
-// Check if user is authenticated
-export const isAuthenticated = async (): Promise<boolean> => {
-  try {
-    const token = await AsyncStorage.getItem('token');
-    return !!token;
-  } catch (error) {
-    return false;
-  }
-};
-
-// Get stored token
-export const getToken = async (): Promise<string | null> => {
-  try {
-    return await AsyncStorage.getItem('token');
-  } catch (error) {
-    return null;
-  }
-};
-
-// Get stored user
-export const getStoredUser = async () => {
-  try {
-    const userStr = await AsyncStorage.getItem('user');
-    return userStr ? JSON.parse(userStr) : null;
-  } catch (error) {
-    return null;
-  }
-};
-
+// Create default export object with all functions
 export default {
   register,
   login,
   getUserProfile,
-  updateProfile,
-  changePassword,
-  deleteAccount,
   logout,
   isAuthenticated,
+  isAdmin,
   getToken,
-  getStoredUser
-}
+  getStoredUser,
+  updateProfile,
+  changePassword,
+  deleteAccount
+};

@@ -1,21 +1,21 @@
+import * as auth from '@/services/auth';
+import { Ionicons } from '@expo/vector-icons'; // 👈 added
+import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Alert,
-  ActivityIndicator,
+  View,
 } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
-import { Ionicons } from '@expo/vector-icons';   // 👈 added
-import { useRouter } from 'expo-router';
-import auth from '@/services/auth';
 
 export default function SignupScreen() {
   const [step, setStep] = useState(1);

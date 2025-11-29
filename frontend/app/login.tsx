@@ -1,213 +1,234 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Alert,
-  ActivityIndicator,
-} from 'react-native';
-import { StatusBar } from 'expo-status-bar';
-import { useRouter } from 'expo-router';
-import auth from '@/services/auth';
+import { FontLoader } from '@/components/FontLoader'
+import auth from '@/services/auth'
+import { Ionicons } from '@expo/vector-icons'
+import { useRouter } from 'expo-router'
+import React, { useState } from 'react'
+import { Alert, SafeAreaView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
-
-  const isValidEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
+  const router = useRouter()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const handleLogin = async () => {
-    if (!email.trim()) return Alert.alert('Error', 'Please enter your email');
-    if (!isValidEmail(email)) return Alert.alert('Error', 'Please enter a valid email address');
-    if (!password.trim()) return Alert.alert('Error', 'Please enter your password');
-
-    setLoading(true);
-    try {
-      const response = await auth.login({
-        email: email.trim(),
-        password: password.trim(),
-      });
-
-      router.replace('/(tabs)');
-    } catch (error: any) {
-      // Provide specific error messages based on the error received
-      if (error.message && error.message.includes('Invalid credentials')) {
-        // Since backend sends the same message for both incorrect email and password,
-        // we provide a generic but helpful message
-        Alert.alert('Login Failed', 'Incorrect email or password. Please try again.');
-      } else {
-        Alert.alert('Login Failed', error.message || 'Something went wrong. Please try again.');
-      }
-    } finally {
-      setLoading(false);
+    // Basic validation
+    if (!email.trim()) {
+      Alert.alert('Error', 'Please enter your email')
+      return
     }
-  };
+    
+    if (!password.trim()) {
+      Alert.alert('Error', 'Please enter your password')
+      return
+    }
 
-  const navigateToSignup = () => {
-    router.push('/signup');
-  };
+    setLoading(true)
+    try {
+      const response = await auth.login({ email, password })
+      
+      // Check if user is admin and redirect accordingly
+      if (response.user.role === 'admin') {
+        router.replace('/admin/dashboard')
+      } else {
+        router.replace('/(tabs)')
+      }
+    } catch (error: any) {
+      Alert.alert('Login Failed', error.message || 'An error occurred during login')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar style="dark" backgroundColor="#e5ff00" />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+    <FontLoader>
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" />
+        
+        <View style={styles.content}>
           <View style={styles.header}>
             <Text style={styles.logo}>SignBuddy</Text>
-            <Text style={styles.title}>Welcome back</Text>
-            <Text style={styles.subtitle}>Login to continue learning</Text>
+            <Text style={styles.title}>Welcome Back!</Text>
+            <Text style={styles.subtitle}>Sign in to continue your learning journey</Text>
           </View>
 
-          <View style={styles.card}>
-            {/* Email Input */}
-            <TextInput
-              style={styles.input}
-              placeholder="email@domain.com"
-              placeholderTextColor="#999"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!loading}
-            />
-
-            {/* Password Input + Show/Hide Button */}
-            <View style={styles.passwordContainer}>
+          <View style={styles.form}>
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Email</Text>
               <TextInput
-                style={[styles.input, { flex: 1 }]}
-                placeholder="Password"
-                placeholderTextColor="#999"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
+                style={styles.input}
+                placeholder="Enter your email"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
-                editable={!loading}
               />
-
-              <TouchableOpacity
-                style={styles.showButton}
-                onPress={() => setShowPassword(!showPassword)}
-              >
-                <Text style={styles.showButtonText}>
-                  {showPassword ? 'Hide' : 'Show'}
-                </Text>
-              </TouchableOpacity>
             </View>
 
-            {/* Login Button */}
-            <TouchableOpacity
-              style={[styles.loginButton, loading && styles.buttonDisabled]}
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Password</Text>
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  style={styles.passwordInput}
+                  placeholder="Enter your password"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                <TouchableOpacity 
+                  style={styles.eyeIcon}
+                  onPress={() => setShowPassword(!showPassword)}
+                >
+                  <Ionicons 
+                    name={showPassword ? "eye-off" : "eye"} 
+                    size={24} 
+                    color="#6B7280" 
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <TouchableOpacity 
+              style={styles.forgotPassword}
+              onPress={() => Alert.alert('Forgot Password', 'Password reset functionality coming soon!')}
+            >
+              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.loginButton, loading && styles.disabledButton]}
               onPress={handleLogin}
               disabled={loading}
             >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.loginButtonText}>Login</Text>
-              )}
-            </TouchableOpacity>
-
-            {/* Google Button */}
-            <TouchableOpacity style={styles.socialButton} disabled={loading}>
-              <Text style={styles.socialButtonText}>
-                <Text style={styles.googleIcon}>G</Text> Continue with Google
+              <Text style={styles.loginButtonText}>
+                {loading ? 'Logging in...' : 'Login'}
               </Text>
             </TouchableOpacity>
 
-            {/* Apple Button */}
-            <TouchableOpacity style={styles.socialButton} disabled={loading}>
-              <Text style={styles.socialButtonText}>
-                <Text style={styles.appleIcon}>🍎</Text> Continue with Apple
-              </Text>
-            </TouchableOpacity>
+            <View style={styles.signupContainer}>
+              <Text style={styles.signupText}>Don't have an account? </Text>
+              <TouchableOpacity onPress={() => router.push('/signup')}>
+                <Text style={styles.signupLink}>Sign Up</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-
-          <View style={styles.signupContainer}>
-            <Text style={styles.signupText}>Don't have an account? </Text>
-            <TouchableOpacity onPress={navigateToSignup}>
-              <Text style={styles.signupLink}>Sign Up</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
-  );
+        </View>
+      </SafeAreaView>
+    </FontLoader>
+  )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fbd932a5' },
-  keyboardView: { flex: 1 },
-  scrollContent: { flexGrow: 1, paddingHorizontal: 20, paddingTop: 60 },
-  header: { alignItems: 'center', marginBottom: 40 },
-  logo: { fontSize: 40, fontWeight: 'bold', color: '#000', marginBottom: 20 },
-  title: { fontSize: 20, fontWeight: '600', color: '#000', marginBottom: 8 },
-  subtitle: { fontSize: 14, color: '#333' },
-  card: {
-    backgroundColor: '#7b7fde',
-    borderRadius: 24,
-    padding: 24,
-    gap: 16,
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 60,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  logo: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: 20,
+    fontFamily: 'IrishGrover-Regular',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: 8,
+    fontFamily: 'IrishGrover-Regular',
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  form: {
+    flex: 1,
+  },
+  inputContainer: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 8,
   },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: '#F9FAFB',
     borderRadius: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    padding: 16,
     fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
   },
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
   },
-  showButton: {
+  passwordInput: {
+    flex: 1,
+    padding: 16,
+    fontSize: 16,
+    paddingRight: 50,
+  },
+  eyeIcon: {
     position: 'absolute',
     right: 16,
-    padding: 6,
+    padding: 4,
   },
-  showButtonText: {
-    color: '#000',
+  forgotPassword: {
+    alignSelf: 'flex-end',
+    marginBottom: 24,
+  },
+  forgotPasswordText: {
+    color: '#8B5CF6',
+    fontSize: 14,
     fontWeight: '600',
   },
   loginButton: {
-    backgroundColor: '#000',
+    backgroundColor: '#8B5CF6',
     borderRadius: 12,
-    paddingVertical: 16,
+    padding: 16,
     alignItems: 'center',
     marginBottom: 24,
   },
-  loginButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  buttonDisabled: { opacity: 0.6 },
-  socialButton: {
-    backgroundColor: '#e8e8e8',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
+  disabledButton: {
+    opacity: 0.7,
   },
-  socialButtonText: { fontSize: 16 },
-  googleIcon: { fontSize: 18, fontWeight: 'bold', marginRight: 8 },
-  appleIcon: { fontSize: 18, marginRight: 8 },
+  loginButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   signupContainer: {
-    marginTop: 32,
     flexDirection: 'row',
     justifyContent: 'center',
   },
-  signupText: { fontSize: 14 },
-  signupLink: { fontSize: 14, fontWeight: '700', textDecorationLine: 'underline' },
-});
+  signupText: {
+    color: '#6B7280',
+    fontSize: 14,
+  },
+  signupLink: {
+    color: '#8B5CF6',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+})
