@@ -1,6 +1,8 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -10,6 +12,9 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+// Serve static files from the public directory
+app.use(express.static('public'));
+
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('Connected to MongoDB'))
@@ -18,6 +23,32 @@ mongoose.connect(process.env.MONGODB_URI)
 // Routes
 app.get('/', (req, res) => {
   res.json({ message: 'SignBuddy API is running!' });
+});
+
+// API endpoint to list all color videos
+app.get('/api/colors/videos', (req, res) => {
+  const colorsDir = path.join(__dirname, 'public', 'signs', 'color');
+  
+  fs.readdir(colorsDir, (err, files) => {
+    if (err) {
+      console.error('Error reading colors directory:', err);
+      return res.status(500).json({ message: 'Error reading colors directory' });
+    }
+    
+    // Filter only video files and create video objects
+    const videos = files
+      .filter(file => file.endsWith('.mp4'))
+      .map(file => {
+        // Extract color name from filename (remove extension)
+        const colorName = path.parse(file).name;
+        return {
+          name: colorName.charAt(0).toUpperCase() + colorName.slice(1), // Capitalize first letter
+          videoUrl: `/signs/color/${file}`
+        };
+      });
+    
+    res.json(videos);
+  });
 });
 
 // User routes

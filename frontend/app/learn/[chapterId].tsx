@@ -14,6 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Video, ResizeMode } from 'expo-av';
 
 interface SignAsset {
   public_id: string;
@@ -21,12 +22,19 @@ interface SignAsset {
   folder: string;
 }
 
+interface ColorLesson {
+  name: string;
+  videoUrl: string;
+}
+
 export default function LearnChapter() {
   const router = useRouter();
   const { chapterId } = useLocalSearchParams();
   const [assets, setAssets] = useState<SignAsset[]>([]);
+  const [colorLessons, setColorLessons] = useState<ColorLesson[]>([]);
   const [loading, setLoading] = useState(true);
   const [completed, setCompleted] = useState(false);
+  const [currentColorIndex, setCurrentColorIndex] = useState(0);
 
   // Map chapter IDs to folder names in Cloudinary
   const chapterFolders: Record<string, string> = {
@@ -50,19 +58,29 @@ export default function LearnChapter() {
   };
 
   useEffect(() => {
-    const fetchAssets = async () => {
+    const fetchData = async () => {
       if (!chapterId || Array.isArray(chapterId)) return;
       
       setLoading(true);
       try {
-        const folderName = chapterFolders[chapterId];
-        if (!folderName) {
-          throw new Error('Invalid chapter');
+        // Special handling for Colors chapter (id: 4)
+        if (chapterId === '4') {
+          // Fetch color videos from backend API
+          const response = await fetch('http://192.168.1.3:3000/api/colors/videos');
+          const videos: ColorLesson[] = await response.json();
+          setColorLessons(videos);
+          setAssets([]); // Clear Cloudinary assets for Colors chapter
+        } else {
+          const folderName = chapterFolders[chapterId];
+          if (!folderName) {
+            throw new Error('Invalid chapter');
+          }
+          
+          const data = await getSignLanguageAssets(folderName);
+          console.log('Fetched assets:', data);
+          setAssets(data);
+          setColorLessons([]); // Clear color lessons for other chapters
         }
-        
-        const data = await getSignLanguageAssets(folderName);
-        console.log('Fetched assets:', data);
-        setAssets(data);
         
         // Check if chapter is already completed
         const completedChapters = chapterProgressService.getCompletedChapters();
@@ -70,14 +88,14 @@ export default function LearnChapter() {
           setCompleted(true);
         }
       } catch (error) {
-        console.error('Error fetching assets:', error);
+        console.error('Error fetching data:', error);
         Alert.alert('Error', 'Failed to load lessons. Please check your internet connection.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAssets();
+    fetchData();
   }, [chapterId]);
 
   const handleCompleteChapter = () => {
@@ -101,6 +119,14 @@ export default function LearnChapter() {
     );
   };
 
+  const handleNextColor = () => {
+    setCurrentColorIndex((prevIndex) => (prevIndex + 1) % colorLessons.length);
+  };
+
+  const handlePreviousColor = () => {
+    setCurrentColorIndex((prevIndex) => (prevIndex - 1 + colorLessons.length) % colorLessons.length);
+  };
+
   const renderAsset = ({ item }: { item: SignAsset }) => {
     // Extract the sign name from the public_id (everything after the last slash and before the extension)
     const signName = item.public_id.split('/').pop()?.split('.')[0] || '';
@@ -115,6 +141,64 @@ export default function LearnChapter() {
           />
         </View>
         <Text style={styles.signName}>{signName.replace(/_/g, ' ')}</Text>
+      </View>
+    );
+  };
+
+  // Special render for Colors chapter
+  const renderColorsChapter = () => {
+    if (colorLessons.length === 0) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>No color lessons available.</Text>
+        </View>
+      );
+    }
+    
+    const currentColor = colorLessons[currentColorIndex];
+    
+    return (
+      <View style={styles.colorsContainer}>
+        <Text style={styles.colorName}>{currentColor.name}</Text>
+        <View style={styles.colorVideoContainer}>
+          <Video
+            source={{ uri: `http://192.168.1.3:3000${currentColor.videoUrl}` }}
+            style={styles.colorVideo}
+            resizeMode={ResizeMode.CONTAIN}
+            shouldPlay
+            isLooping
+            isMuted
+          />
+        </View>
+        <View style={styles.navigationContainer}>
+          <TouchableOpacity 
+            style={styles.navButton} 
+            onPress={handlePreviousColor}
+            disabled={currentColorIndex === 0}
+          >
+            <Ionicons 
+              name="arrow-back" 
+              size={24} 
+              color={currentColorIndex === 0 ? '#9CA3AF' : '#1F2937'} 
+            />
+          </TouchableOpacity>
+          
+          <Text style={styles.pageIndicator}>
+            {currentColorIndex + 1} / {colorLessons.length}
+          </Text>
+          
+          <TouchableOpacity 
+            style={styles.navButton} 
+            onPress={handleNextColor}
+            disabled={currentColorIndex === colorLessons.length - 1}
+          >
+            <Ionicons 
+              name="arrow-forward" 
+              size={24} 
+              color={currentColorIndex === colorLessons.length - 1 ? '#9CA3AF' : '#1F2937'} 
+            />
+          </TouchableOpacity>
+        </View>
       </View>
     );
   };
@@ -143,7 +227,26 @@ export default function LearnChapter() {
         <View style={styles.placeholder} />
       </View>
 
-      {assets.length > 0 ? (
+      {chapterId === '4' ? (
+        // Special rendering for Colors chapter
+        <>
+          {renderColorsChapter()}
+          
+          {!completed && (
+            <TouchableOpacity style={styles.completeButton} onPress={handleCompleteChapter}>
+              <Text style={styles.completeButtonText}>Complete Chapter</Text>
+            </TouchableOpacity>
+          )}
+          
+          {completed && (
+            <View style={styles.completedBanner}>
+              <Ionicons name="checkmark-circle" size={24} color="#fff" />
+              <Text style={styles.completedText}>Chapter Completed!</Text>
+            </View>
+          )}
+        </>
+      ) : assets.length > 0 ? (
+        // Regular rendering for other chapters
         <>
           <FlatList
             data={assets}
@@ -251,6 +354,51 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1F2937',
     textAlign: 'center',
+  },
+  colorsContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  colorName: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: 20,
+    fontFamily: 'IrishGrover',
+  },
+  colorVideoContainer: {
+    width: 250,
+    height: 250,
+    borderRadius: 125,
+    overflow: 'hidden',
+    marginBottom: 30,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  colorVideo: {
+    width: '100%',
+    height: '100%',
+  },
+  navigationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingHorizontal: 20,
+  },
+  navButton: {
+    padding: 10,
+  },
+  pageIndicator: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1F2937',
   },
   completeButton: {
     backgroundColor: '#A855F7',
