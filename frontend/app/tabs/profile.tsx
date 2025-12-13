@@ -1,42 +1,29 @@
-// import { StyleSheet, Text, View } from 'react-native'
-// import React, { useEffect } from 'react'
-
-// const Fetch = () => {
-//      const [data,setData] = useState([])
-//      useEffect(() => {
-
-//        const response = axios.get('https://api.cloudinary.com/v1_1/drjwcgiyc/resources/search')
-//      setData(response.data)
-//      },[])
-//   return (
-//     <View>
-//       {/* <Text>fetch</Text> */}
-//     </View>
-//   )
-// }
-
-// export default Fetch
-
-// const styles = StyleSheet.create({})
-import { FontLoader } from '@/components/FontLoader'
-import React, { useState } from 'react'
-import { ScrollView, StatusBar, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { ScrollView, StatusBar, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { FontLoader } from '../../components/FontLoader';
+import { getStoredUser, getUserProfile } from '../../services/auth';
 
 export default function ProfileScreen() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true)
   const [darkModeEnabled, setDarkModeEnabled] = useState(false)
-  
-  // Mock user data
-  const userData = {
-    name: 'Alex Johnson',
-    email: 'alex.johnson@example.com',
-    joinDate: 'January 2023',
-    level: 'Intermediate',
-    streak: 12,
-    totalLessons: 24,
-  }
 
+  const router = useRouter();
+  const [user, setUser] = useState<any>(null);
+  const [completedChapters, setCompletedChapters] = useState<number[]>([]);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [changePasswordModalVisible, setChangePasswordModalVisible] = useState(false);
+  const [deleteAccountModalVisible, setDeleteAccountModalVisible] = useState(false);
+  const [editUserData, setEditUserData] = useState({ username: '', email: '' });
+  const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmNewPassword: '' });
+  const [loading, setLoading] = useState(false);
+  // Password visibility states
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const streakDays = [true, true, false, false, false, false, false];
+  
   // Profile menu items
   const menuItems = [
     { id: '1', title: 'Edit Profile', icon: '👤' },
@@ -45,13 +32,30 @@ export default function ProfileScreen() {
     { id: '4', title: 'Settings', icon: '⚙️' },
     { id: '5', title: 'Help & Support', icon: '❓' },
     { id: '6', title: 'Logout', icon: '🚪' },
-  ]
+  ];
+
+  useEffect(() => {
+    loadUserData();
+  }, []);
+
+  const loadUserData = async () => {
+    try {
+      // Fetch fresh user data from API to get latest streak information
+      const userData = await getUserProfile();
+      setUser(userData);
+    } catch (error) {
+      console.error('Error loading user data:', error);
+      // Fallback to stored user data if API call fails
+      const storedUserData = await getStoredUser();
+      setUser(storedUserData);
+    }
+  };
 
   return (
     <FontLoader>
       <SafeAreaView style={styles.container} edges={['top']}>
         <StatusBar barStyle="dark-content" backgroundColor="#e5ff00" />
-        <ScrollView 
+        <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.contentContainer}
           showsVerticalScrollIndicator={false}
@@ -60,34 +64,36 @@ export default function ProfileScreen() {
             <Text style={styles.title}>Profile</Text>
             <Text style={styles.subtitle}>Manage your account</Text>
           </View>
-          
+
           <View style={styles.profileSection}>
             <View style={styles.avatarContainer}>
               <View style={styles.avatar}>
-                <Text style={styles.avatarText}>AJ</Text>
+                <Text style={styles.avatarText}>
+                  {user?.username ? user.username.charAt(0).toUpperCase() : 'U'}
+                </Text>
               </View>
             </View>
-            
+
             <View style={styles.userInfo}>
-              <Text style={styles.userName}>{userData.name}</Text>
-              <Text style={styles.userEmail}>{userData.email}</Text>
+              <Text style={styles.userName}>{user?.username || 'Loading...'}</Text>
+              <Text style={styles.userEmail}>{user?.email || 'Loading...'}</Text>
               <View style={styles.userStats}>
                 <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{userData.streak}</Text>
+                  <Text style={styles.statValue}>{user?.streak || 0}</Text>
                   <Text style={styles.statLabel}>Day Streak</Text>
                 </View>
                 <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{userData.totalLessons}</Text>
+                  <Text style={styles.statValue}>{user?.totalLessons || 0}</Text>
                   <Text style={styles.statLabel}>Lessons</Text>
                 </View>
                 <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{userData.level}</Text>
+                  <Text style={styles.statValue}>{user?.level || 'Beginner'}</Text>
                   <Text style={styles.statLabel}>Level</Text>
                 </View>
               </View>
             </View>
           </View>
-          
+
           <View style={styles.settingsSection}>
             <Text style={styles.sectionTitle}>Settings</Text>
             <View style={styles.settingItem}>
@@ -99,7 +105,7 @@ export default function ProfileScreen() {
                 value={notificationsEnabled}
               />
             </View>
-            
+
             <View style={styles.settingItem}>
               <Text style={styles.settingText}>Dark Mode</Text>
               <Switch
@@ -110,7 +116,7 @@ export default function ProfileScreen() {
               />
             </View>
           </View>
-          
+
           <View style={styles.menuSection}>
             <Text style={styles.sectionTitle}>Account</Text>
             {menuItems.map((item) => (

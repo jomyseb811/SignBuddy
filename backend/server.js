@@ -5,6 +5,9 @@ const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
 
+// Import middleware
+const updateStreak = require('./middleware/streakTracker');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -25,40 +28,38 @@ app.get('/', (req, res) => {
   res.json({ message: 'SignBuddy API is running!' });
 });
 
-// API endpoint to list all color videos
-app.get('/api/colors/videos', (req, res) => {
-  const colorsDir = path.join(__dirname, 'public', 'signs', 'color');
+// API endpoint to list all basic color concepts
+app.get('/api/colors/basic', (req, res) => {
+  const basicColorsDir = path.join(__dirname, 'public', 'signs', 'basic_colors');
   
-  fs.readdir(colorsDir, (err, files) => {
+  fs.readdir(basicColorsDir, (err, files) => {
     if (err) {
-      console.error('Error reading colors directory:', err);
-      return res.status(500).json({ message: 'Error reading colors directory' });
+      console.error('Error reading basic colors directory:', err);
+      return res.status(500).json({ message: 'Error reading basic colors directory' });
     }
     
-    // Filter only video files and create video objects
-    const videos = files
-      .filter(file => file.endsWith('.mp4'))
+    // Filter only GIF files and create lesson objects
+    const lessons = files
+      .filter(file => file.endsWith('.gif'))
       .map(file => {
-        // Extract color name from filename (remove extension)
-        const colorName = path.parse(file).name;
+        // Extract concept name from filename (remove extension and convert underscores to spaces)
+        const conceptName = path.parse(file).name.replace(/_/g, ' ');
+        // Capitalize first letter of each word
+        const formattedName = conceptName.replace(/\b\w/g, l => l.toUpperCase());
         return {
-          name: colorName.charAt(0).toUpperCase() + colorName.slice(1), // Capitalize first letter
-          videoUrl: `/signs/color/${file}`
+          name: formattedName,
+          videoUrl: `/signs/basic_colors/${file}`
         };
       });
     
-    res.json(videos);
+    res.json(lessons);
   });
 });
 
-// User routes
-app.use('/api/users', require('./routes/userRoutes'));
-
-// Chapter progress routes
-app.use('/api/progress', require('./routes/progressRoutes'));
-
-// Dictionary routes
-app.use('/api/dictionary', require('./routes/dictionaryRoutes'));
+// Apply streak tracking middleware to all protected routes
+app.use('/api/users', updateStreak, require('./routes/userRoutes'));
+app.use('/api/progress', updateStreak, require('./routes/progressRoutes'));
+app.use('/api/dictionary', updateStreak, require('./routes/dictionaryRoutes'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {

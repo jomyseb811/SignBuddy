@@ -23,11 +23,11 @@ export default function AdminGuard({ children }: AdminGuardProps) {
       
       if (!adminStatus) {
         // Redirect to home if not admin
-        router.replace('/(tabs)');
+        router.replace('/tabs' as any);
       }
     } catch (error) {
       console.error('Error checking admin status:', error);
-      router.replace('/(tabs)');
+      router.replace('/tabs' as any);
     } finally {
       setIsLoading(false);
     }

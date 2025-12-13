@@ -28,6 +28,15 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  // Add streak tracking fields
+  currentStreak: {
+    type: Number,
+    default: 0
+  },
+  lastActivityDate: {
+    type: Date,
+    default: null
+  },
   progress: {
     type: Map,
     of: {

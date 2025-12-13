@@ -28,3 +28,8 @@ declare module '*.webp' {
   const value: any;
   export default value;
 }
+
+// Environment variables
+declare module '@env' {
+  export const EXPO_PUBLIC_API_URL: string;
+}

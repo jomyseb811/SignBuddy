@@ -3,8 +3,8 @@ import auth from '@/services/auth'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
-import { Alert, SafeAreaView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
-
+import { Alert, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 export default function LoginScreen() {
   const router = useRouter()
   const [email, setEmail] = useState('')
@@ -18,7 +18,7 @@ export default function LoginScreen() {
       Alert.alert('Error', 'Please enter your email')
       return
     }
-    
+
     if (!password.trim()) {
       Alert.alert('Error', 'Please enter your password')
       return
@@ -27,15 +27,25 @@ export default function LoginScreen() {
     setLoading(true)
     try {
       const response = await auth.login({ email, password })
-      
+
       // Check if user is admin and redirect accordingly
       if (response.user.role === 'admin') {
         router.replace('/admin/dashboard')
       } else {
-        router.replace('/(tabs)')
+        router.replace('/tabs')
       }
     } catch (error: any) {
-      Alert.alert('Login Failed', error.message || 'An error occurred during login')
+      // Provide more specific error messages based on the error type
+      let errorMessage = error.message || 'An error occurred during login';
+
+      // Check if it's a network error
+      if (errorMessage.includes('Unable to connect') || errorMessage.includes('Network error')) {
+        // Keep the full error message which includes the server URL
+      } else if (errorMessage.includes('Invalid credentials')) {
+        errorMessage = 'Invalid email or password. Please try again.';
+      }
+
+      Alert.alert('Login Failed', errorMessage)
     } finally {
       setLoading(false)
     }
@@ -45,7 +55,7 @@ export default function LoginScreen() {
     <FontLoader>
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" />
-        
+
         <View style={styles.content}>
           <View style={styles.header}>
             <Text style={styles.logo}>SignBuddy</Text>
@@ -79,27 +89,27 @@ export default function LoginScreen() {
                   autoCapitalize="none"
                   autoCorrect={false}
                 />
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.eyeIcon}
                   onPress={() => setShowPassword(!showPassword)}
                 >
-                  <Ionicons 
-                    name={showPassword ? "eye-off" : "eye"} 
-                    size={24} 
-                    color="#6B7280" 
+                  <Ionicons
+                    name={showPassword ? "eye-off" : "eye"}
+                    size={24}
+                    color="#6B7280"
                   />
                 </TouchableOpacity>
               </View>
             </View>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.forgotPassword}
               onPress={() => Alert.alert('Forgot Password', 'Password reset functionality coming soon!')}
             >
               <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.loginButton, loading && styles.disabledButton]}
               onPress={handleLogin}
               disabled={loading}

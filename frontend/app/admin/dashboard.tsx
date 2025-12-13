@@ -1,8 +1,9 @@
-import auth, { getStoredUser } from '@/services/auth'
+import { getStoredUser } from '@/services/auth'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import React, { useEffect, useState } from 'react'
-import { Alert, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
 export default function AdminDashboard() {
   const router = useRouter()
@@ -21,44 +22,34 @@ export default function AdminDashboard() {
     }
   }
 
-  const handleLogout = async () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            await auth.logout()
-            router.replace('/login')
-          },
-        },
-      ]
-    )
-  }
-
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <SafeAreaView style={styles.container} edges={['top']}> {/* ✅ Added edges prop */}
+      <StatusBar barStyle="dark-content" backgroundColor="#F5F3FF" />
       
+      {/* ✅ Added purple header bar */}
+      <View style={styles.topBar}>
+        <Text style={styles.topBarTitle}>Admin Panel</Text>
+        <TouchableOpacity 
+          style={styles.logoutButton}
+          onPress={() => router.push('/login')}
+        >
+          <Ionicons name="log-out-outline" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+      </View>
+
       <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
+        {/* <View style={styles.header}>
           <View style={styles.headerTop}>
             <View>
               <Text style={styles.title}>Admin Dashboard</Text>
               <Text style={styles.subtitle}>Welcome back, {user?.username || 'Admin'}</Text>
             </View>
-            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-              <Ionicons name="log-out-outline" size={24} color="#FFFFFF" />
-            </TouchableOpacity>
           </View>
-        </View>
+        </View> */}
 
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
@@ -154,7 +145,26 @@ export default function AdminDashboard() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F3FF', // Light purple background
+    backgroundColor: '#F5F3FF',
+  },
+  // ✅ New purple header bar
+  topBar: {
+    backgroundColor: '#8B5CF6',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  topBarTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  logoutButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   scrollView: {
     flex: 1,
@@ -181,13 +191,6 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     color: '#6B7280',
-  },
-  logoutButton: {
-    backgroundColor: '#EF4444',
-    borderRadius: 12,
-    padding: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   statsContainer: {
     flexDirection: 'row',

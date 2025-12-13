@@ -3,6 +3,10 @@
   "compilerOptions": {
     "strict": false,
     "skipLibCheck": true,
+    "jsx": "react-native",
+    "lib": ["ESNext"],
+    "types": ["react", "react-native"],
+    "noEmit": true,
     "paths": {
       "@/*": ["./*"]
     }
@@ -13,6 +17,7 @@
     "**/*.js",
     "**/*.jsx",
     ".expo/types/**/*.ts",
-    "expo-env.d.ts"
+    "expo-env.d.ts",
+    "declarations.d.ts"
   ]
 }

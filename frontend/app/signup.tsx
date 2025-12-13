@@ -4,18 +4,18 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SignupScreen() {
   const [step, setStep] = useState(1);
@@ -25,7 +25,7 @@ export default function SignupScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // 👇 Password visibility states
+  //  Password visibility states
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -62,7 +62,7 @@ export default function SignupScreen() {
       Alert.alert('Error', 'Please enter a valid email address');
       return;
     }
-    
+
     if (!username.trim()) {
       Alert.alert('Error', 'Please enter a username');
       return;
@@ -91,7 +91,7 @@ export default function SignupScreen() {
       Alert.alert('Success', 'Account created successfully!', [
         {
           text: 'OK',
-          onPress: () => router.replace('/(tabs)'),
+          onPress: () => router.replace('/login'),
         },
       ]);
     } catch (error: any) {
@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
   },
   socialButtonText: { color: '#000', fontSize: 16, fontWeight: '500' },
   googleIcon: { fontSize: 18, fontWeight: 'bold', marginRight: 8 },
-  
+
   // Added missing styles
   termsContainer: {
     marginTop: 20,

@@ -1,11 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
-const API_URL = 'http://192.168.1.3:3000/api/users';
+// Use environment variable or fallback to localhost
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
+const API_URL = `${API_BASE_URL}/users`;
 
 interface RegisterData {
   username: string;
-  email: string;
+  email: string,
   password: string;
 }
 
@@ -43,6 +45,10 @@ export const register = async (data: RegisterData): Promise<AuthResponse> => {
     if (error.response) {
       throw new Error(error.response.data.message || 'Registration failed');
     }
+    // More detailed error message for network issues
+    if (error.code === 'NETWORK_ERROR' || error.message.includes('Network Error') || error.message.includes('ECONNREFUSED')) {
+      throw new Error('Unable to connect to the server. Please check your internet connection and ensure the server is running on ' + API_BASE_URL);
+    }
     throw new Error('Network error. Please check your connection.');
   }
 };
@@ -62,6 +68,10 @@ export const login = async (data: LoginData): Promise<AuthResponse> => {
   } catch (error: any) {
     if (error.response) {
       throw new Error(error.response.data.message || 'Login failed');
+    }
+    // More detailed error message for network issues
+    if (error.code === 'NETWORK_ERROR' || error.message.includes('Network Error') || error.message.includes('ECONNREFUSED')) {
+      throw new Error('Unable to connect to the server. Please check your internet connection and ensure the server is running on ' + API_BASE_URL);
     }
     throw new Error('Network error. Please check your connection.');
   }

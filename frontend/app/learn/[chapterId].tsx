@@ -1,6 +1,7 @@
 import { chapterProgressService } from '@/services/chapterProgress';
 import { getSignLanguageAssets } from '@/services/cloudinary';
 import { Ionicons } from '@expo/vector-icons';
+import { ResizeMode, Video } from 'expo-av';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -14,7 +15,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Video, ResizeMode } from 'expo-av';
 
 interface SignAsset {
   public_id: string;
@@ -31,10 +31,12 @@ export default function LearnChapter() {
   const router = useRouter();
   const { chapterId } = useLocalSearchParams();
   const [assets, setAssets] = useState<SignAsset[]>([]);
+  const [basicLessons, setBasicLessons] = useState<ColorLesson[]>([]);
   const [colorLessons, setColorLessons] = useState<ColorLesson[]>([]);
   const [loading, setLoading] = useState(true);
   const [completed, setCompleted] = useState(false);
   const [currentColorIndex, setCurrentColorIndex] = useState(0);
+  const [showBasics, setShowBasics] = useState(true); // Start with basics
 
   // Map chapter IDs to folder names in Cloudinary
   const chapterFolders: Record<string, string> = {
@@ -57,6 +59,27 @@ export default function LearnChapter() {
     '7': 'Weather',
   };
 
+  // Special data for Colors chapter - Main Colors
+  const defaultColorLessons: ColorLesson[] = [
+    { name: 'Black', videoUrl: 'http://192.168.1.3:3000/signs/color/black.mp4' },
+    { name: 'Beige', videoUrl: 'http://192.168.1.3:3000/signs/color/beige.mp4' },
+    { name: 'Blond', videoUrl: 'http://192.168.1.3:3000/signs/color/blond.mp4' },
+    { name: 'Blue', videoUrl: 'http://192.168.1.3:3000/signs/color/blue.mp4' },
+    { name: 'Brown', videoUrl: 'http://192.168.1.3:3000/signs/color/brown.mp4' },
+    { name: 'Golden', videoUrl: 'http://192.168.1.3:3000/signs/color/golden.mp4' },
+    { name: 'Green', videoUrl: 'http://192.168.1.3:3000/signs/color/green.mp4' },
+    { name: 'Grey', videoUrl: 'http://192.168.1.3:3000/signs/color/grey.mp4' },
+    { name: 'Orange', videoUrl: 'http://192.168.1.3:3000/signs/color/orange.mp4' },
+    { name: 'Pale', videoUrl: 'http://192.168.1.3:3000/signs/color/pale.mp4' },
+    { name: 'Pink', videoUrl: 'http://192.168.1.3:3000/signs/color/pink.mp4' },
+    { name: 'Purple', videoUrl: 'http://192.168.1.3:3000/signs/color/purple.mp4' },
+    { name: 'Red', videoUrl: 'http://192.168.1.3:3000/signs/color/red.mp4' },
+    { name: 'Silver', videoUrl: 'http://192.168.1.3:3000/signs/color/silver.mp4' },
+    { name: 'Violet', videoUrl: 'http://192.168.1.3:3000/signs/color/violet.mp4' },
+    { name: 'White', videoUrl: 'http://192.168.1.3:3000/signs/color/white.mp4' },
+    { name: 'Yellow', videoUrl: 'http://192.168.1.3:3000/signs/color/yellow.mp4' }
+  ];
+
   useEffect(() => {
     const fetchData = async () => {
       if (!chapterId || Array.isArray(chapterId)) return;
@@ -65,11 +88,29 @@ export default function LearnChapter() {
       try {
         // Special handling for Colors chapter (id: 4)
         if (chapterId === '4') {
-          // Fetch color videos from backend API
-          const response = await fetch('http://192.168.1.3:3000/api/colors/videos');
-          const videos: ColorLesson[] = await response.json();
-          setColorLessons(videos);
-          setAssets([]); // Clear Cloudinary assets for Colors chapter
+          // For Colors chapter, we use local files
+          setAssets([]);
+          
+          // Fetch basic color concepts from backend
+          try {
+            const basicResponse = await fetch('http://192.168.1.3:3000/api/colors/basic');
+            const basicData: ColorLesson[] = await basicResponse.json();
+            setBasicLessons(basicData);
+          } catch (error) {
+            console.error('Error fetching basic lessons:', error);
+            // Fallback to default basic lessons
+            setBasicLessons([
+              { name: 'What Is Color?', videoUrl: 'http://192.168.1.3:3000/signs/basic_colors/what_is_color.gif' },
+              { name: 'Light And Color', videoUrl: 'http://192.168.1.3:3000/signs/basic_colors/light_and_color.gif' },
+              { name: 'Primary Colors', videoUrl: 'http://192.168.1.3:3000/signs/basic_colors/primary_colors.gif' },
+              { name: 'Secondary Colors', videoUrl: 'http://192.168.1.3:3000/signs/basic_colors/secondary_colors.gif' },
+              { name: 'Warm Colors', videoUrl: 'http://192.168.1.3:3000/signs/basic_colors/warm_colors.gif' },
+              { name: 'Cool Colors', videoUrl: 'http://192.168.1.3:3000/signs/basic_colors/cool_colors.gif' }
+            ]);
+          }
+          
+          // Set color lessons
+          setColorLessons(defaultColorLessons);
         } else {
           const folderName = chapterFolders[chapterId];
           if (!folderName) {
@@ -79,8 +120,15 @@ export default function LearnChapter() {
           const data = await getSignLanguageAssets(folderName);
           console.log('Fetched assets:', data);
           setAssets(data);
-          setColorLessons([]); // Clear color lessons for other chapters
+          
+          // Clear color lessons for other chapters
+          setBasicLessons([]);
+          setColorLessons([]);
         }
+        
+        // Reset color index when switching chapters
+        setCurrentColorIndex(0);
+        setShowBasics(true); // Reset to basics when switching chapters
         
         // Check if chapter is already completed
         const completedChapters = chapterProgressService.getCompletedChapters();
@@ -120,11 +168,29 @@ export default function LearnChapter() {
   };
 
   const handleNextColor = () => {
-    setCurrentColorIndex((prevIndex) => (prevIndex + 1) % colorLessons.length);
+    const lessons = showBasics ? basicLessons : colorLessons;
+    
+    if (currentColorIndex < lessons.length - 1) {
+      // Move to next item in current section
+      setCurrentColorIndex(prevIndex => prevIndex + 1);
+    } else if (showBasics && basicLessons.length > 0) {
+      // Finished basics, move to main colors
+      setShowBasics(false);
+      setCurrentColorIndex(0);
+    }
+    // If we're at the end of main colors, do nothing (complete button will be shown)
   };
 
   const handlePreviousColor = () => {
-    setCurrentColorIndex((prevIndex) => (prevIndex - 1 + colorLessons.length) % colorLessons.length);
+    if (currentColorIndex > 0) {
+      // Move to previous item in current section
+      setCurrentColorIndex(prevIndex => prevIndex - 1);
+    } else if (!showBasics && basicLessons.length > 0) {
+      // At start of main colors, move back to basics
+      setShowBasics(true);
+      setCurrentColorIndex(basicLessons.length - 1);
+    }
+    // If we're at the start of basics, do nothing
   };
 
   const renderAsset = ({ item }: { item: SignAsset }) => {
@@ -145,59 +211,83 @@ export default function LearnChapter() {
     );
   };
 
-  // Special render for Colors chapter
+  // Special render for Colors chapter with sequential flow
   const renderColorsChapter = () => {
-    if (colorLessons.length === 0) {
+    // Handle case where we haven't loaded lessons yet
+    if ((showBasics && basicLessons.length === 0) || (!showBasics && colorLessons.length === 0)) {
       return (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No color lessons available.</Text>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#67E8F9" />
+          <Text style={styles.loadingText}>Loading color lessons...</Text>
         </View>
       );
     }
     
-    const currentColor = colorLessons[currentColorIndex];
+    const lessons = showBasics ? basicLessons : colorLessons;
+    const currentColor = lessons[currentColorIndex];
+    const isAtStart = showBasics && currentColorIndex === 0;
+    const isAtEnd = !showBasics && currentColorIndex === colorLessons.length - 1;
     
     return (
       <View style={styles.colorsContainer}>
         <Text style={styles.colorName}>{currentColor.name}</Text>
         <View style={styles.colorVideoContainer}>
-          <Video
-            source={{ uri: `http://192.168.1.3:3000${currentColor.videoUrl}` }}
-            style={styles.colorVideo}
-            resizeMode={ResizeMode.CONTAIN}
-            shouldPlay
-            isLooping
-            isMuted
-          />
+          {currentColor.videoUrl.endsWith('.gif') ? (
+            <Image 
+              source={{ uri: `http://192.168.1.3:3000${currentColor.videoUrl}` }} 
+              style={styles.colorVideo}
+              resizeMode="contain"
+            />
+          ) : (
+            <Video
+              source={{ uri: currentColor.videoUrl }}
+              style={styles.colorVideo}
+              resizeMode={ResizeMode.CONTAIN}
+              shouldPlay
+              isLooping
+              isMuted
+            />
+          )}
         </View>
         <View style={styles.navigationContainer}>
           <TouchableOpacity 
             style={styles.navButton} 
             onPress={handlePreviousColor}
-            disabled={currentColorIndex === 0}
+            disabled={isAtStart}
           >
             <Ionicons 
               name="arrow-back" 
               size={24} 
-              color={currentColorIndex === 0 ? '#9CA3AF' : '#1F2937'} 
+              color={isAtStart ? '#9CA3AF' : '#1F2937'} 
             />
           </TouchableOpacity>
           
           <Text style={styles.pageIndicator}>
-            {currentColorIndex + 1} / {colorLessons.length}
+            {showBasics ? 'Basics' : 'Colors'} {currentColorIndex + 1} / {lessons.length}
           </Text>
           
           <TouchableOpacity 
             style={styles.navButton} 
             onPress={handleNextColor}
-            disabled={currentColorIndex === colorLessons.length - 1}
+            disabled={isAtEnd}
           >
             <Ionicons 
               name="arrow-forward" 
               size={24} 
-              color={currentColorIndex === colorLessons.length - 1 ? '#9CA3AF' : '#1F2937'} 
+              color={isAtEnd ? '#9CA3AF' : '#1F2937'} 
             />
           </TouchableOpacity>
+        </View>
+        
+        {/* Show section indicator */}
+        <View style={styles.sectionIndicator}>
+          <Text style={[styles.sectionText, showBasics && styles.activeSection]}>
+            Basic Concepts
+          </Text>
+          <Text style={styles.separator}>•</Text>
+          <Text style={[styles.sectionText, !showBasics && styles.activeSection]}>
+            Main Colors
+          </Text>
         </View>
       </View>
     );
@@ -228,7 +318,7 @@ export default function LearnChapter() {
       </View>
 
       {chapterId === '4' ? (
-        // Special rendering for Colors chapter
+        // Special rendering for Colors chapter with sequential flow
         <>
           {renderColorsChapter()}
           
@@ -399,6 +489,24 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#1F2937',
+  },
+  sectionIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  sectionText: {
+    fontSize: 16,
+    color: '#6B7280',
+    marginHorizontal: 5,
+  },
+  activeSection: {
+    color: '#1F2937',
+    fontWeight: 'bold',
+  },
+  separator: {
+    fontSize: 16,
+    color: '#6B7280',
   },
   completeButton: {
     backgroundColor: '#A855F7',

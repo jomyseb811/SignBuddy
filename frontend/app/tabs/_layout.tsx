@@ -1,8 +1,8 @@
-import { StyleSheet, Text, View, Image } from 'react-native'
-import React from 'react'
-import { Tabs } from 'expo-router'
-import { icon } from '@/constants/icons'
 import { FontLoader } from '@/components/FontLoader'
+import { icon } from '@/constants/icons'
+import { Tabs } from 'expo-router'
+import React from 'react'
+import { Image, StyleSheet } from 'react-native'
 
 const TabLayout = () => {
   return (

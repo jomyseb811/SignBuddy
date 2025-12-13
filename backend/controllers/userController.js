@@ -17,12 +17,14 @@ const registerUser = async (req, res) => {
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // Create new user with default role
+    // Create new user with default role and initialize streak fields
     const user = new User({
       username,
       email,
       password: hashedPassword,
-      role: 'user' // Default role
+      role: 'user', // Default role
+      currentStreak: 0, // Will be set to 1 on first login
+      lastActivityDate: null
     });
 
     const savedUser = await user.save();
@@ -41,7 +43,8 @@ const registerUser = async (req, res) => {
         id: savedUser._id,
         username: savedUser.username,
         email: savedUser.email,
-        role: savedUser.role // Include role in response
+        role: savedUser.role,
+        streak: savedUser.currentStreak || 0 // Include streak in response
       }
     });
   } catch (error) {
@@ -72,6 +75,13 @@ const loginUser = async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
+    // Initialize streak for new users (first login)
+    if (user.currentStreak === 0 && user.lastActivityDate === null) {
+      user.currentStreak = 1;
+      user.lastActivityDate = new Date();
+      await user.save();
+    }
+
     // Generate JWT token
     const token = jwt.sign(
       { userId: user._id },
@@ -86,7 +96,8 @@ const loginUser = async (req, res) => {
         id: user._id,
         username: user.username,
         email: user.email,
-        role: user.role // Include role in response
+        role: user.role,
+        streak: user.currentStreak || 0 // Include streak in response
       }
     });
   } catch (error) {
@@ -102,7 +113,16 @@ const getUserProfile = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    res.json(user);
+    
+    // Return user profile with streak information
+    res.json({
+      id: user._id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      streak: user.currentStreak || 0,
+      createdAt: user.createdAt
+    });
   } catch (error) {
     console.error('Get profile error:', error);
     res.status(500).json({ message: 'Error fetching user profile' });

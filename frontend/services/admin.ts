@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { getToken } from './auth';
 
-const API_URL = 'http://192.168.1.3:3000/api';
+const API_URL = 'http://192.168.1.10:3000/api';
 
 // Get all users (admin only)
 export const getAllUsers = async () => {

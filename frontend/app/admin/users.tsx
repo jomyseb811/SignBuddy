@@ -1,5 +1,5 @@
 import adminService from '@/services/admin'
-import auth, { getStoredUser } from '@/services/auth'
+import { getStoredUser } from '@/services/auth'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import React, { useEffect, useState } from 'react'
@@ -35,24 +35,6 @@ export default function AdminUsers() {
     } catch (error) {
       console.error('Error loading current user:', error)
     }
-  }
-
-  const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            await auth.logout()
-            router.replace('/login')
-          },
-        },
-      ]
-    )
   }
 
   const loadUsers = async () => {
@@ -125,14 +107,6 @@ export default function AdminUsers() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      
-      {/* Header with logout button */}
-      <View style={styles.headerContainer}>
-        <Text style={styles.screenTitle}>User Management</Text>
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
       
       <ScrollView 
         style={styles.scrollView}
