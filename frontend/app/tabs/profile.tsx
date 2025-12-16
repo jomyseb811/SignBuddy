@@ -1,9 +1,9 @@
+import { getStoredUser, getUserProfile, togglePushNotifications } from '@/services/auth';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, StatusBar, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontLoader } from '../../components/FontLoader';
-import { getStoredUser, getUserProfile } from '../../services/auth';
 
 export default function ProfileScreen() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true)
@@ -18,6 +18,7 @@ export default function ProfileScreen() {
   const [editUserData, setEditUserData] = useState({ username: '', email: '' });
   const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmNewPassword: '' });
   const [loading, setLoading] = useState(false);
+
   // Password visibility states
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -28,8 +29,8 @@ export default function ProfileScreen() {
   const menuItems = [
     { id: '1', title: 'Edit Profile', icon: '👤' },
     { id: '2', title: 'Learning Statistics', icon: '📊' },
-    { id: '3', title: 'Achievements', icon: '🏆' },
-    { id: '4', title: 'Settings', icon: '⚙️' },
+    // { id: '3', title: 'Achievements', icon: '🏆' },
+    // { id: '4', title: 'Settings', icon: '⚙️' },
     { id: '5', title: 'Help & Support', icon: '❓' },
     { id: '6', title: 'Logout', icon: '🚪' },
   ];
@@ -43,6 +44,7 @@ export default function ProfileScreen() {
       // Fetch fresh user data from API to get latest streak information
       const userData = await getUserProfile();
       setUser(userData);
+      setNotificationsEnabled(userData.notificationsEnabled)
     } catch (error) {
       console.error('Error loading user data:', error);
       // Fallback to stored user data if API call fails
@@ -51,6 +53,20 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleNotificationToggle = async (value: boolean) => {
+  try {
+    setNotificationsEnabled(value); // Update UI immediately
+    await togglePushNotifications(value); // Update backend
+    
+    // Optionally show success message
+    console.log('Notification preference updated');
+  } catch (error) {
+    console.error('Error updating notification preference:', error);
+    // Revert the switch if API call fails
+    setNotificationsEnabled(!value);
+    console.log('Failed to update notification preference');
+  }
+};
   return (
     <FontLoader>
       <SafeAreaView style={styles.container} edges={['top']}>
@@ -79,15 +95,15 @@ export default function ProfileScreen() {
               <Text style={styles.userEmail}>{user?.email || 'Loading...'}</Text>
               <View style={styles.userStats}>
                 <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{user?.streak || 0}</Text>
+                  <Text style={styles.statValue}>{user?.currentStreak }</Text>
                   <Text style={styles.statLabel}>Day Streak</Text>
                 </View>
                 <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{user?.totalLessons || 0}</Text>
-                  <Text style={styles.statLabel}>Lessons</Text>
+                  <Text style={styles.statValue}>{user?.signsLearned}</Text>
+                  <Text style={styles.statLabel}>Signs Learned</Text>
                 </View>
                 <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{user?.level || 'Beginner'}</Text>
+                  <Text style={styles.statValue}>{user?.level}</Text>
                   <Text style={styles.statLabel}>Level</Text>
                 </View>
               </View>

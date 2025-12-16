@@ -218,6 +218,85 @@ export const changePassword = async (data: ChangePasswordData) => {
   }
 };
 
+export const togglePushNotifications = async (value : boolean )=> {
+try {
+  const token = await AsyncStorage.getItem('token');
+  if(!token){
+    throw new Error('NO token found')
+  }
+
+  const response = await axios.put(
+    `${API_URL}/notifications`,
+    {notificationsEnabled: value},
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  )
+  return response.data;
+
+}catch(error: any){
+ if(error.response){
+  throw new Error(error.response.data.message) || 'Failed to toggle notifications'
+ }
+ throw new Error('Network error, Please check your connection');
+}
+}
+
+// Save push token
+export const savePushToken = async (pushToken: string) => {
+  try {
+    const token = await AsyncStorage.getItem('token');
+    
+    if (!token) {
+      throw new Error('No token found');
+    }
+    
+    const response = await axios.post(
+      `${API_URL}/push-notifications/token`,
+      { token: pushToken },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    
+    return response.data;
+  } catch (error: any) {
+    if (error.response) {
+      throw new Error(error.response.data.message || 'Failed to save push token');
+    }
+    throw new Error('Network error. Please check your connection.');
+  }
+};
+
+// Remove push token
+export const removePushToken = async (pushToken: string) => {
+  try {
+    const token = await AsyncStorage.getItem('token');
+    
+    if (!token) {
+      throw new Error('No token found');
+    }
+    
+    const response = await axios.delete(`${API_URL}/push-notifications/token`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      data: { token: pushToken }
+    });
+    
+    return response.data;
+  } catch (error: any) {
+    if (error.response) {
+      throw new Error(error.response.data.message || 'Failed to remove push token');
+    }
+    throw new Error('Network error. Please check your connection.');
+  }
+};
+
 // Delete user account
 export const deleteAccount = async () => {
   try {
@@ -257,6 +336,9 @@ export default {
   getToken,
   getStoredUser,
   updateProfile,
+  togglePushNotifications,
+  savePushToken,
+  removePushToken,
   changePassword,
   deleteAccount
 };

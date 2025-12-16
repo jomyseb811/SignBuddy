@@ -61,25 +61,24 @@ export default function LearnChapter() {
 
   // Special data for Colors chapter - Main Colors
   const defaultColorLessons: ColorLesson[] = [
-    { name: 'Black', videoUrl: 'http://192.168.1.3:3000/signs/color/black.mp4' },
-    { name: 'Beige', videoUrl: 'http://192.168.1.3:3000/signs/color/beige.mp4' },
-    { name: 'Blond', videoUrl: 'http://192.168.1.3:3000/signs/color/blond.mp4' },
-    { name: 'Blue', videoUrl: 'http://192.168.1.3:3000/signs/color/blue.mp4' },
-    { name: 'Brown', videoUrl: 'http://192.168.1.3:3000/signs/color/brown.mp4' },
-    { name: 'Golden', videoUrl: 'http://192.168.1.3:3000/signs/color/golden.mp4' },
-    { name: 'Green', videoUrl: 'http://192.168.1.3:3000/signs/color/green.mp4' },
-    { name: 'Grey', videoUrl: 'http://192.168.1.3:3000/signs/color/grey.mp4' },
-    { name: 'Orange', videoUrl: 'http://192.168.1.3:3000/signs/color/orange.mp4' },
-    { name: 'Pale', videoUrl: 'http://192.168.1.3:3000/signs/color/pale.mp4' },
-    { name: 'Pink', videoUrl: 'http://192.168.1.3:3000/signs/color/pink.mp4' },
-    { name: 'Purple', videoUrl: 'http://192.168.1.3:3000/signs/color/purple.mp4' },
-    { name: 'Red', videoUrl: 'http://192.168.1.3:3000/signs/color/red.mp4' },
-    { name: 'Silver', videoUrl: 'http://192.168.1.3:3000/signs/color/silver.mp4' },
-    { name: 'Violet', videoUrl: 'http://192.168.1.3:3000/signs/color/violet.mp4' },
-    { name: 'White', videoUrl: 'http://192.168.1.3:3000/signs/color/white.mp4' },
-    { name: 'Yellow', videoUrl: 'http://192.168.1.3:3000/signs/color/yellow.mp4' }
+    { name: 'Black', videoUrl: '/signs/color/black.mp4' },
+    { name: 'Beige', videoUrl: '/signs/color/beige.mp4' },
+    { name: 'Blond', videoUrl: '/signs/color/blond.mp4' },
+    { name: 'Blue', videoUrl: '/signs/color/blue.mp4' },
+    { name: 'Brown', videoUrl: '/signs/color/brown.mp4' },
+    { name: 'Golden', videoUrl: '/signs/color/golden.mp4' },
+    { name: 'Green', videoUrl: '/signs/color/green.mp4' },
+    { name: 'Grey', videoUrl: '/signs/color/grey.mp4' },
+    { name: 'Orange', videoUrl: '/signs/color/orange.mp4' },
+    { name: 'Pale', videoUrl: '/signs/color/pale.mp4' },
+    { name: 'Pink', videoUrl: '/signs/color/pink.mp4' },
+    { name: 'Purple', videoUrl: '/signs/color/purple.mp4' },
+    { name: 'Red', videoUrl: '/signs/color/red.mp4' },
+    { name: 'Silver', videoUrl: '/signs/color/silver.mp4' },
+    { name: 'Violet', videoUrl: '/signs/color/violet.mp4' },
+    { name: 'White', videoUrl: '/signs/color/white.mp4' },
+    { name: 'Yellow', videoUrl: '/signs/color/yellow.mp4' }
   ];
-
   useEffect(() => {
     const fetchData = async () => {
       if (!chapterId || Array.isArray(chapterId)) return;
@@ -93,22 +92,29 @@ export default function LearnChapter() {
           
           // Fetch basic color concepts from backend
           try {
-            const basicResponse = await fetch('http://192.168.1.3:3000/api/colors/basic');
-            const basicData: ColorLesson[] = await basicResponse.json();
-            setBasicLessons(basicData);
+            const basicResponse = await fetch('http://192.168.1.11:3000/api/colors/basic');
+            if (!basicResponse.ok) {
+              throw new Error(`HTTP error! status: ${basicResponse.status}`);
+            }
+            const basicData = await basicResponse.json();
+            // Validate that we received an array
+            if (Array.isArray(basicData)) {
+              setBasicLessons(basicData);
+            } else {
+              throw new Error('Invalid data format received from server');
+            }
           } catch (error) {
             console.error('Error fetching basic lessons:', error);
             // Fallback to default basic lessons
             setBasicLessons([
-              { name: 'What Is Color?', videoUrl: 'http://192.168.1.3:3000/signs/basic_colors/what_is_color.gif' },
-              { name: 'Light And Color', videoUrl: 'http://192.168.1.3:3000/signs/basic_colors/light_and_color.gif' },
-              { name: 'Primary Colors', videoUrl: 'http://192.168.1.3:3000/signs/basic_colors/primary_colors.gif' },
-              { name: 'Secondary Colors', videoUrl: 'http://192.168.1.3:3000/signs/basic_colors/secondary_colors.gif' },
-              { name: 'Warm Colors', videoUrl: 'http://192.168.1.3:3000/signs/basic_colors/warm_colors.gif' },
-              { name: 'Cool Colors', videoUrl: 'http://192.168.1.3:3000/signs/basic_colors/cool_colors.gif' }
+              { name: 'What Is Color?', videoUrl: '/signs/basic_colors/what_is_color.gif' },
+              { name: 'Light And Color', videoUrl: '/signs/basic_colors/light_and_color.gif' },
+              { name: 'Primary Colors', videoUrl: '/signs/basic_colors/primary_colors.gif' },
+              { name: 'Secondary Colors', videoUrl: '/signs/basic_colors/secondary_colors.gif' },
+              { name: 'Warm Colors', videoUrl: '/signs/basic_colors/warm_colors.gif' },
+              { name: 'Cool Colors', videoUrl: '/signs/basic_colors/cool_colors.gif' }
             ]);
-          }
-          
+          }          
           // Set color lessons
           setColorLessons(defaultColorLessons);
         } else {
@@ -234,21 +240,20 @@ export default function LearnChapter() {
         <View style={styles.colorVideoContainer}>
           {currentColor.videoUrl.endsWith('.gif') ? (
             <Image 
-              source={{ uri: `http://192.168.1.3:3000${currentColor.videoUrl}` }} 
+              source={{ uri: currentColor.videoUrl.startsWith('http') ? currentColor.videoUrl : `http://192.168.1.3:3000${currentColor.videoUrl}` }} 
               style={styles.colorVideo}
               resizeMode="contain"
             />
           ) : (
             <Video
-              source={{ uri: currentColor.videoUrl }}
+              source={{ uri: currentColor.videoUrl.startsWith('http') ? currentColor.videoUrl : `http://192.168.1.3:3000${currentColor.videoUrl}` }}
               style={styles.colorVideo}
               resizeMode={ResizeMode.CONTAIN}
               shouldPlay
               isLooping
               isMuted
             />
-          )}
-        </View>
+          )}        </View>
         <View style={styles.navigationContainer}>
           <TouchableOpacity 
             style={styles.navButton} 

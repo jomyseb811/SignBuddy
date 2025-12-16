@@ -55,6 +55,67 @@ app.get('/api/colors/basic', (req, res) => {
     res.json(lessons);
   });
 });
+// Get all signs (alphabets + numbers)
+app.get('/api/signs', async (req, res) => {
+  try {
+    const signs = await mongoose.connection.db
+      .collection('signs')
+      .find()
+      .toArray();
+    res.json(signs);
+  } catch (error) {
+    console.error('Error fetching signs:', error);
+    res.status(500).json({ message: 'Error fetching signs', error: error.message });
+  }
+});
+
+// Get all alphabets only
+app.get('/api/signs/alphabets', async (req, res) => {
+  try {
+    const alphabets = await mongoose.connection.db
+      .collection('signs')
+      .find({ type: 'alphabet' })
+      .sort({ character: 1 })
+      .toArray();
+    res.json(alphabets);
+  } catch (error) {
+    console.error('Error fetching alphabets:', error);
+    res.status(500).json({ message: 'Error fetching alphabets', error: error.message });
+  }
+});
+
+// Get all numbers only
+app.get('/api/signs/numbers', async (req, res) => {
+  try {
+    const numbers = await mongoose.connection.db
+      .collection('signs')
+      .find({ type: 'number' })
+      .sort({ character: 1 })
+      .toArray();
+    res.json(numbers);
+  } catch (error) {
+    console.error('Error fetching numbers:', error);
+    res.status(500).json({ message: 'Error fetching numbers', error: error.message });
+  }
+});
+
+// Get specific sign by character
+app.get('/api/signs/:character', async (req, res) => {
+  try {
+    const sign = await mongoose.connection.db
+      .collection('signs')
+      .findOne({ character: req.params.character.toUpperCase() });
+    
+    if (!sign) {
+      return res.status(404).json({ message: 'Sign not found' });
+    }
+    
+    res.json(sign);
+  } catch (error) {
+    console.error('Error fetching sign:', error);
+    res.status(500).json({ message: 'Error fetching sign', error: error.message });
+  }
+});
 
 // Apply streak tracking middleware to all protected routes
 app.use('/api/users', updateStreak, require('./routes/userRoutes'));

@@ -22,9 +22,12 @@ const registerUser = async (req, res) => {
       username,
       email,
       password: hashedPassword,
-      role: 'user', // Default role
-      currentStreak: 0, // Will be set to 1 on first login
-      lastActivityDate: null
+      role: 'user', 
+      currentStreak: 0, 
+      signsLearned: 0, 
+      level:'Beginner',
+      lastActivityDate: null,
+      notificationsEnabled: true,
     });
 
     const savedUser = await user.save();
@@ -44,7 +47,11 @@ const registerUser = async (req, res) => {
         username: savedUser.username,
         email: savedUser.email,
         role: savedUser.role,
-        streak: savedUser.currentStreak || 0 // Include streak in response
+        streak: savedUser.currentStreak || 0 ,
+        signsLearned: savedUser.signsLearned || 0,
+        level: savedUser.level,
+        lastActivityDate: savedUser.lastActivityDate,
+        notificationsEnabled: savedUser.notificationsEnabled
       }
     });
   } catch (error) {
@@ -97,7 +104,11 @@ const loginUser = async (req, res) => {
         username: user.username,
         email: user.email,
         role: user.role,
-        streak: user.currentStreak || 0 // Include streak in response
+        streak: user.currentStreak || 0 ,
+        signsLearned: user.signsLearned || 0,
+        level: user.level,
+        lastActivityDate: user.lastActivityDate,
+        notificationsEnabled: user.notificationsEnabled
       }
     });
   } catch (error) {
@@ -121,7 +132,11 @@ const getUserProfile = async (req, res) => {
       email: user.email,
       role: user.role,
       streak: user.currentStreak || 0,
-      createdAt: user.createdAt
+      createdAt: user.createdAt,
+      signsLearned: user.signsLearned || 0,
+      level: user.level,
+      lastActivityDate: user.lastActivityDate,
+      notificationsEnabled: true,
     });
   } catch (error) {
     console.error('Get profile error:', error);
