@@ -7,7 +7,7 @@ require('dotenv').config();
 
 // Import middleware
 const updateStreak = require('./middleware/streakTracker');
-
+const User = require('./models/User');  
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -20,7 +20,8 @@ app.use(express.static('public'));
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('Connected to MongoDB'))
+  .then(() => console.log('Connected to MongoDB')
+)
   .catch(err => console.error('MongoDB connection error:', err));
 
 // Routes

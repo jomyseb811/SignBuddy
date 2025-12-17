@@ -1,6 +1,19 @@
 const express = require('express');
 const router = express.Router();
-const { registerUser, loginUser, getUserProfile, updateUserProfile, changeUserPassword, deleteUserAccount, getAllUsers, updateUserRole, deactivateUser } = require('../controllers/userController');
+const {
+ registerUser,
+ loginUser,
+ getUserProfile,
+ updateUserProfile,
+ changeUserPassword,
+ deleteUserAccount,
+ getAllUsers, 
+updateUserRole,
+ deactivateUser ,
+togglePushNotifications,
+savePushToken,
+removePushToken
+} = require('../controllers/userController');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 
 // Register a new user
@@ -20,6 +33,11 @@ router.put('/change-password', authenticateToken, changeUserPassword);
 
 // Delete user account (protected route)
 router.delete('/account', authenticateToken, deleteUserAccount);
+
+// Push notification routes (protected) ⬇️
+router.put('/push-notification/toggle', authenticateToken, togglePushNotifications)
+router.post('/push-notification/token', authenticateToken, savePushToken)
+router.delete('/push-notification/token', authenticateToken, removePushToken)
 
 // Admin routes (protected and role-restricted)
 router.get('/admin/users', authenticateToken, requireRole('admin'), getAllUsers);

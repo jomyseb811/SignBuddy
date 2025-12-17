@@ -318,6 +318,71 @@ const deactivateUser = async (req, res) => {
   }
 };
 
+// Toggle push notifications
+const togglePushNotifications = async (req, res) => {
+  try {
+    const { enabled } = req.body;
+    
+    await User.findByIdAndUpdate(req.user.userId, {
+      pushNotificationsEnabled: enabled
+    });
+    
+    res.json({ 
+      message: 'Push notification preference updated',
+      enabled 
+    });
+  } catch (error) {
+    console.error('Toggle push notifications error:', error);
+    res.status(500).json({ message: 'Failed to update preference' });
+  }
+};
+
+// Save push token
+const savePushToken = async (req, res) => {
+  try {
+    const { token } = req.body;
+    
+    if (!token) {
+      return res.status(400).json({ message: 'Token is required' });
+    }
+    
+    // Add token if not already exists (prevent duplicates)
+    await User.findByIdAndUpdate(req.user.id, {
+      $addToSet: { pushTokens: token }
+    });
+    
+    res.json({ 
+      message: 'Push token saved',
+      token 
+    });
+  } catch (error) {
+    console.error('Save push token error:', error);
+    res.status(500).json({ message: 'Failed to save token' });
+  }
+};
+
+// Remove push token
+const removePushToken = async (req, res) => {
+  try {
+    const { token } = req.body;
+    
+    if (!token) {
+      return res.status(400).json({ message: 'Token is required' });
+    }
+    
+    await User.findByIdAndUpdate(req.user.id, {
+      $pull: { pushTokens: token }
+    });
+    
+    res.json({ 
+      message: 'Push token removed',
+      token 
+    });
+  } catch (error) {
+    console.error('Remove push token error:', error);
+    res.status(500).json({ message: 'Failed to remove token' });
+  }
+};
 module.exports = {
   registerUser,
   loginUser,
@@ -327,5 +392,8 @@ module.exports = {
   deleteUserAccount,
   getAllUsers,
   updateUserRole,
-  deactivateUser
+  deactivateUser,
+  togglePushNotifications,
+  savePushToken,
+  removePushToken
 };

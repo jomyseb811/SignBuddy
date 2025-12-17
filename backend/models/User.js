@@ -47,10 +47,31 @@ const userSchema = new mongoose.Schema({
       score: {
         type: Number,
         default: 0
-      }
+      },
     },
     default: {}
   },
+
+    level:{
+ type: String,
+enum: ['Beginner','Intermediate','Advanced'],
+ default: 'Beginner'
+},
+
+signsLearned: {
+type: Number,
+default: 0
+},
+
+ pushNotificationsEnabled: {
+type: Boolean,
+default: true
+},
+
+pushTokens: {
+type: [String],
+default: []
+},
   createdAt: {
     type: Date,
     default: Date.now

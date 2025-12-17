@@ -1,6 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-
 // Use environment variable or fallback to localhost
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
 const API_URL = `${API_BASE_URL}/users`;
@@ -218,7 +217,7 @@ export const changePassword = async (data: ChangePasswordData) => {
   }
 };
 
-export const togglePushNotifications = async (value : boolean )=> {
+export const togglePushNotifications = async (enabled : boolean )=> {
 try {
   const token = await AsyncStorage.getItem('token');
   if(!token){
@@ -226,8 +225,8 @@ try {
   }
 
   const response = await axios.put(
-    `${API_URL}/notifications`,
-    {notificationsEnabled: value},
+    `${API_URL}/push-notification/toggle`,
+    { enabled },
     {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -244,89 +243,11 @@ try {
 }
 }
 
-// Save push token
-export const savePushToken = async (pushToken: string) => {
-  try {
-    const token = await AsyncStorage.getItem('token');
-    
-    if (!token) {
-      throw new Error('No token found');
-    }
-    
-    const response = await axios.post(
-      `${API_URL}/push-notifications/token`,
-      { token: pushToken },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-    
-    return response.data;
-  } catch (error: any) {
-    if (error.response) {
-      throw new Error(error.response.data.message || 'Failed to save push token');
-    }
-    throw new Error('Network error. Please check your connection.');
-  }
-};
 
-// Remove push token
-export const removePushToken = async (pushToken: string) => {
-  try {
-    const token = await AsyncStorage.getItem('token');
-    
-    if (!token) {
-      throw new Error('No token found');
-    }
-    
-    const response = await axios.delete(`${API_URL}/push-notifications/token`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      data: { token: pushToken }
-    });
-    
-    return response.data;
-  } catch (error: any) {
-    if (error.response) {
-      throw new Error(error.response.data.message || 'Failed to remove push token');
-    }
-    throw new Error('Network error. Please check your connection.');
-  }
-};
 
-// Delete user account
-export const deleteAccount = async () => {
-  try {
-    const token = await AsyncStorage.getItem('token');
-    
-    if (!token) {
-      throw new Error('No token found');
-    }
-    
-    const response = await axios.delete(`${API_URL}/account`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    
-    // Clear stored data
-    await AsyncStorage.removeItem('token');
-    await AsyncStorage.removeItem('user');
-    
-    return response.data;
-  } catch (error: any) {
-    if (error.response) {
-      throw new Error(error.response.data.message || 'Failed to delete account');
-    }
-    throw new Error('Network error. Please check your connection.');
-  }
-};
 
 // Create default export object with all functions
-export default {
+export default {  
   register,
   login,
   getUserProfile,
@@ -337,8 +258,6 @@ export default {
   getStoredUser,
   updateProfile,
   togglePushNotifications,
-  savePushToken,
-  removePushToken,
   changePassword,
-  deleteAccount
+
 };

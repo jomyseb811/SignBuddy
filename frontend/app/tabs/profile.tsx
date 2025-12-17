@@ -1,7 +1,14 @@
-import { getStoredUser, getUserProfile, togglePushNotifications } from '@/services/auth';
+import { getStoredUser, getUserProfile, logout, togglePushNotifications } from '@/services/auth';
+import {
+  cancelAllNotifications,
+  registerForNotifications,
+  scheduleDailyReminder,
+  scheduleStreakReminder,
+  setupNotifications
+} from '@/services/notificationService';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, StatusBar, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StatusBar, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontLoader } from '../../components/FontLoader';
 
@@ -11,32 +18,11 @@ export default function ProfileScreen() {
 
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
-  const [completedChapters, setCompletedChapters] = useState<number[]>([]);
-  const [editModalVisible, setEditModalVisible] = useState(false);
-  const [changePasswordModalVisible, setChangePasswordModalVisible] = useState(false);
-  const [deleteAccountModalVisible, setDeleteAccountModalVisible] = useState(false);
-  const [editUserData, setEditUserData] = useState({ username: '', email: '' });
-  const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmNewPassword: '' });
   const [loading, setLoading] = useState(false);
-
-  // Password visibility states
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const streakDays = [true, true, false, false, false, false, false];
-  
-  // Profile menu items
-  const menuItems = [
-    { id: '1', title: 'Edit Profile', icon: '👤' },
-    { id: '2', title: 'Learning Statistics', icon: '📊' },
-    // { id: '3', title: 'Achievements', icon: '🏆' },
-    // { id: '4', title: 'Settings', icon: '⚙️' },
-    { id: '5', title: 'Help & Support', icon: '❓' },
-    { id: '6', title: 'Logout', icon: '🚪' },
-  ];
 
   useEffect(() => {
     loadUserData();
+    setupNotifications();
   }, []);
 
   const loadUserData = async () => {
@@ -44,29 +30,82 @@ export default function ProfileScreen() {
       // Fetch fresh user data from API to get latest streak information
       const userData = await getUserProfile();
       setUser(userData);
-      setNotificationsEnabled(userData.notificationsEnabled)
+      // Load notification preference from user data
+      setNotificationsEnabled(userData.pushNotificationsEnabled ?? true);
     } catch (error) {
       console.error('Error loading user data:', error);
       // Fallback to stored user data if API call fails
       const storedUserData = await getStoredUser();
       setUser(storedUserData);
+      setNotificationsEnabled(storedUserData?.pushNotificationsEnabled ?? true);
     }
   };
 
   const handleNotificationToggle = async (value: boolean) => {
   try {
-    setNotificationsEnabled(value); // Update UI immediately
-    await togglePushNotifications(value); // Update backend
+    setLoading(true);
+    setNotificationsEnabled(value);
     
-    // Optionally show success message
-    console.log('Notification preference updated');
+    // Update backend preference
+    await togglePushNotifications(value);
+    
+    if (value) {
+      // Register for LOCAL notifications (works in Expo Go)
+      const granted = await registerForNotifications();
+      
+      if (granted) {
+        await scheduleDailyReminder(20, 0); // 8 PM
+        await scheduleStreakReminder(22, 0); // 10 PM
+        Alert.alert('Success', 'Notifications enabled!');
+      } else {
+        Alert.alert('Permission Denied', 'Please enable notifications in settings');
+        setNotificationsEnabled(false);
+      }
+    } else {
+      await cancelAllNotifications();
+      Alert.alert('Success', 'Notifications disabled');
+    }
   } catch (error) {
     console.error('Error updating notification preference:', error);
-    // Revert the switch if API call fails
     setNotificationsEnabled(!value);
-    console.log('Failed to update notification preference');
+    Alert.alert('Error', 'Failed to update notification preference');
+  } finally {
+    setLoading(false);
   }
 };
+
+ const handleLogout = async () => {
+  Alert.alert(
+    'Logout',
+    'Are you sure you want to logout?',
+    [
+      {
+        text: 'Cancel',
+        style: 'cancel'
+      },
+      {
+        text: 'Logout',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            // Cancel all notifications
+            await cancelAllNotifications();
+            
+            // Logout
+            await logout();
+            
+            // Navigate to login
+            router.replace('/login');
+          } catch (error) {
+            console.error('Logout error:', error);
+            Alert.alert('Error', 'Failed to logout');
+          }
+        }
+      }
+    ]
+  );
+};
+
   return (
     <FontLoader>
       <SafeAreaView style={styles.container} edges={['top']}>
@@ -95,15 +134,15 @@ export default function ProfileScreen() {
               <Text style={styles.userEmail}>{user?.email || 'Loading...'}</Text>
               <View style={styles.userStats}>
                 <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{user?.currentStreak }</Text>
+                  <Text style={styles.statValue}>{user?.currentStreak || 0}</Text>
                   <Text style={styles.statLabel}>Day Streak</Text>
                 </View>
                 <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{user?.signsLearned}</Text>
+                  <Text style={styles.statValue}>{user?.signsLearned || 0}</Text>
                   <Text style={styles.statLabel}>Signs Learned</Text>
                 </View>
                 <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{user?.level}</Text>
+                  <Text style={styles.statValue}>{user?.level || 'Beginner'}</Text>
                   <Text style={styles.statLabel}>Level</Text>
                 </View>
               </View>
@@ -117,8 +156,9 @@ export default function ProfileScreen() {
               <Switch
                 trackColor={{ false: '#767577', true: '#67E8F9' }}
                 thumbColor={notificationsEnabled ? '#1F2937' : '#f4f3f4'}
-                onValueChange={setNotificationsEnabled}
+                onValueChange={handleNotificationToggle}
                 value={notificationsEnabled}
+                disabled={loading}
               />
             </View>
 
@@ -135,13 +175,43 @@ export default function ProfileScreen() {
 
           <View style={styles.menuSection}>
             <Text style={styles.sectionTitle}>Account</Text>
-            {menuItems.map((item) => (
-              <TouchableOpacity key={item.id} style={styles.menuItem}>
-                <Text style={styles.menuIcon}>{item.icon}</Text>
-                <Text style={styles.menuText}>{item.title}</Text>
-                <Text style={styles.menuArrow}>→</Text>
-              </TouchableOpacity>
-            ))}
+            
+            <TouchableOpacity 
+              style={styles.menuItem}
+              // onPress={() => router.push('/(tabs)/profile/edit')}
+            >
+              <Text style={styles.menuIcon}>👤</Text>
+              <Text style={styles.menuText}>Edit Profile</Text>
+              <Text style={styles.menuArrow}>→</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.menuItem}
+              // onPress={() => router.push('/(tabs)/profile/statistics')}
+            >
+              <Text style={styles.menuIcon}>📊</Text>
+              <Text style={styles.menuText}>Learning Statistics</Text>
+              <Text style={styles.menuArrow}>→</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.menuItem}
+              // onPress={() => router.push('/(tabs)/profile/help')}
+            >
+              <Text style={styles.menuIcon}>❓</Text>
+              <Text style={styles.menuText}>Help & Support</Text>
+              <Text style={styles.menuArrow}>→</Text>
+            </TouchableOpacity>
+
+            {/* Logout with different styling */}
+            <TouchableOpacity 
+              style={[styles.menuItem, styles.logoutItem]}
+              onPress={handleLogout}
+            >
+              <Text style={styles.menuIcon}>🚪</Text>
+              <Text style={[styles.menuText, styles.logoutText]}>Logout</Text>
+              <Text style={[styles.menuArrow, styles.logoutText]}>→</Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -279,4 +349,14 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#1F2937',
   },
-})
+  // Logout specific styles
+  logoutItem: {
+    backgroundColor: '#FEE2E2',
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+  },
+  logoutText: {
+    color: '#DC2626',
+    fontWeight: '600',
+  },
+});
